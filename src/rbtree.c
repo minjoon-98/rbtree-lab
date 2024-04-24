@@ -10,7 +10,7 @@ rbtree *new_rbtree(void)
   node_t *nil = (node_t *)calloc(1, sizeof(node_t));
   nil->color = RBTREE_BLACK;    // nil 노드의 색을 검정으로 설정합니다.
   p->nil = p->root = nil;       // nil 노드를 트리의 루트이자 nil로 설정합니다.
-  nil->left = nil->right = nil; // nil 노드의 왼쪽과 오른쪽 포인터를 자기 자신으로 설정합니다.
+  nil->left = nil->right = nil; // nil 노드의 왼쪽과 오른쪽 포인터를 자기 자신으로 설정합니다.  // rbtree.c:235 에서 sibling이 nil일 때, NULL 인 자식을 참조 할 때 오류 발생! 해결하기 위해 추가.
   return p;                     // 새로 생성된 레드-블랙 트리를 반환합니다.
 }
 
@@ -75,13 +75,13 @@ void right_rotate(rbtree *t, node_t *y)
   y->parent = x;
 }
 
-// 새로 삽입된 노드를 수정하는 함수
+// 노드가 삽입된 트리의 위반 여부를 확인하고 수정하는 함수
 void rbtree_insert_fixup(rbtree *t, node_t *newNode)
 {
   node_t *uncle;
   while (newNode->parent->color == RBTREE_RED)
   {
-    if (newNode->parent == newNode->parent->parent->left)
+    if (newNode->parent == newNode->parent->parent->left) // 삽입된 노드의 부모가 조부모의 왼쪽 자식일 경우 (삽입된 노드의 삼촌이 오른쪽에 있는 경우)
     {
       uncle = newNode->parent->parent->right;
       if (uncle->color == RBTREE_RED) // case 1
@@ -103,7 +103,7 @@ void rbtree_insert_fixup(rbtree *t, node_t *newNode)
         right_rotate(t, newNode->parent->parent);
       }
     }
-    else
+    else // 삽입된 노드의 부모가 조부모의 왼쪽 자식일 경우 (삽입된 노드의 삼촌이 왼쪽에 있는 경우)
     {
       uncle = newNode->parent->parent->left;
       if (uncle->color == RBTREE_RED) // case 1
@@ -159,49 +159,49 @@ node_t *rbtree_insert(rbtree *t, const key_t key)
   return t->root;
 }
 
-// 지정된 키를 가진 노드를 검색하는 함수
+// 주어진 키를 가진 노드를 레드-블랙 트리에서 검색하는 함수
 node_t *rbtree_find(const rbtree *t, const key_t key)
 {
   // TODO: implement find
-  node_t *current = t->root;
-  while (current != t->nil)
+  node_t *current = t->root; // 현재 노드를 루트로 설정하여 시작합니다.
+  while (current != t->nil)  // 현재 노드가 nil 노드가 아닐 때까지 반복합니다.
   {
     if (key == current->key)
-      return current;
+      return current; // 현재 노드의 키와 주어진 키가 일치하는 경우 해당 노드를 반환합니다.
     else if (key < current->key)
-      current = current->left;
+      current = current->left; // 주어진 키가 현재 노드의 키보다 작으면 왼쪽 서브트리로 이동합니다.
     else
-      current = current->right;
+      current = current->right; // 주어진 키가 현재 노드의 키보다 크면 오른쪽 서브트리로 이동합니다.
   }
-  return NULL;
+  return NULL; // 주어진 키를 가진 노드를 찾지 못한 경우 NULL을 반환합니다.
 }
 
 // 최소 키를 가진 노드를 찾는 함수
 node_t *rbtree_min(const rbtree *t)
 {
   // TODO: implement find
-  if (t->root == t->nil)
+  if (t->root == t->nil) // 루트가 nil인 경우 트리가 비어있으므로 NULL을 반환합니다.
     return NULL;
-  node_t *current = t->root;
-  while (current->left != t->nil)
+  node_t *current = t->root;      // 현재 노드를 루트로 설정합니다.
+  while (current->left != t->nil) // 현재 노드의 왼쪽 자식이 nil이 아닐 때까지 반복하여 왼쪽 자식으로 이동합니다.
   {
     current = current->left;
   }
-  return current;
+  return current; // 반복 후 현재 노드가 최소 키를 가진 노드입니다.
 }
 
 // 최대 키를 가진 노드를 찾는 함수
 node_t *rbtree_max(const rbtree *t)
 {
   // TODO: implement find
-  if (t->root == t->nil)
+  if (t->root == t->nil) // 루트가 nil인 경우 트리가 비어있으므로 NULL을 반환합니다.
     return NULL;
-  node_t *current = t->root;
-  while (current->right != t->nil)
+  node_t *current = t->root;       // 현재 노드를 루트로 설정합니다.
+  while (current->right != t->nil) // 현재 노드의 오른쪽 자식이 nil이 아닐 때까지 반복하여 오른쪽 자식으로 이동합니다.
   {
     current = current->right;
   }
-  return current;
+  return current; // 반복 후 현재 노드가 최대 키를 가진 노드입니다.
 }
 
 // 노드 u의 부모를 노드 v의 부모로 이식하는 함수
@@ -216,13 +216,13 @@ void rbtree_transplant(rbtree *t, node_t *u, node_t *v)
   v->parent = u->parent;
 }
 
-// 삭제된 노드를 수정하는 함수
+// 노드가 삭제된 트리의 위반 여부를 확인하고 수정하는 함수
 void rbtree_erase_fixup(rbtree *t, node_t *p)
 {
   node_t *sibling;
   while (p != t->root && p->color == RBTREE_BLACK)
   {
-    if (p == p->parent->left)
+    if (p == p->parent->left) // 삭제된 노드가 부모의 왼쪽 자식일 경우 (삭제된 노드의 형제가 오른쪽 자식일 경우)
     {
       sibling = p->parent->right;
       if (sibling->color == RBTREE_RED) // case 1
@@ -253,7 +253,7 @@ void rbtree_erase_fixup(rbtree *t, node_t *p)
         p = t->root;
       }
     }
-    else
+    else // 삭제된 노드가 부모의 오른쪽 자식일 경우 (삭제된 노드의 형제가 왼쪽 자식일 경우)
     {
       sibling = p->parent->left;
       if (sibling->color == RBTREE_RED) // case 1
@@ -292,10 +292,11 @@ void rbtree_erase_fixup(rbtree *t, node_t *p)
 int rbtree_erase(rbtree *t, node_t *p)
 {
   // TODO: implement erase
-  node_t *replaced;
-  node_t *successor;
+  node_t *replaced;  // 후임자가 삭제되고 후임자의 자리를 대체할 노드
+  node_t *successor; // 삭제될 노드의 후임자
   successor = p;
   color_t erased_color = successor->color;
+  // 삭제할 노드의 자식이 한 개 이하일 때 (삭제되는 노드의 색은 해당 노드의 색)
   if (p->left == t->nil)
   {
     replaced = p->right;
@@ -306,14 +307,14 @@ int rbtree_erase(rbtree *t, node_t *p)
     replaced = p->left;
     rbtree_transplant(t, p, p->left);
   }
-  else
+  else // 삭제할 노드의 자식이 두 개일 때 (삭제되는 노드의 색은 후임자의 노드의 색)
   {
     rbtree tmp;
     tmp.root = p->right;
     tmp.nil = t->nil;
-    successor = rbtree_min(&tmp);
-    erased_color = successor->color;
-    replaced = successor->right;
+    successor = rbtree_min(&tmp);    // 후임자는 삭제될 노드의 오른쪽 노드가 루트인 트리에서의 최소값
+    erased_color = successor->color; // 삭제되는 색은 후임자의 색
+    replaced = successor->right;     // 후임자 노드가 삭제되고 대체될 노드
     if (successor->parent == p)
     {
       replaced->parent = successor;
@@ -329,9 +330,9 @@ int rbtree_erase(rbtree *t, node_t *p)
     successor->left->parent = successor;
     successor->color = p->color;
   }
-  if (erased_color == RBTREE_BLACK)
+  if (erased_color == RBTREE_BLACK) // 만약 삭제된 색이 검정색이라면?
   {
-    rbtree_erase_fixup(t, replaced);
+    rbtree_erase_fixup(t, replaced); // (doubly black 해결)
   }
 
   free(p);
